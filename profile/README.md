@@ -1,23 +1,22 @@
 # ESP Physical Auth 🦀
 
 把 **ESP32-C5** 变成一把**私钥永不导出**的硬件认证器：TOTP / WebAuthn passkey /
-BTC 冷钱包 / 设备身份。设备广播名 `ATRI-TOTP`，与 [ATRI](https://atri.moe) 同源命名。
+BTC 冷钱包 / 设备身份。设备广播名 `ATRI-TOTP`。
 
 ## 子项目
 
 | 目录 | 角色 | 语言 | 接口 |
 |------|------|------|------|
-| [`esp32c5-totp/`](esp32c5-totp/) | 🧠 **硬件核心**：生成密钥 + 签名，私钥不出芯片 | ESP-IDF / C | BLE **NUS** 文本协议 |
-| [`web/`](web/) | 🌐 **浏览器直连**：TOTP / 冷钱包静态页 | HTML + JS | Web Bluetooth |
-| [`passless/`](passless/) | 🐧 **Linux 桥**：把 ESP32 冒充成系统 FIDO2 密钥 | Rust | 虚拟 UHID + CTAP2 |
-| [`authnkey-esp32/`](authnkey-esp32/) | 🤖 **Android 桥**：让手机系统用 ESP32 做 passkey | Kotlin | Credential Provider API |
-| [`intermediate-ca-worker/`](intermediate-ca-worker/) | 🔏 **证书签发器**：Cloudflare Worker，用根 CA 给中间 CA 签证书（含 Web UI） | JS | HTTPS |
+| [`esp32c5-totp/`](../../../../physkey-firmware/) | 🧠 **硬件核心**：生成密钥 + 签名，私钥不出芯片 | ESP-IDF / C | BLE **NUS** 文本协议 |
+| [`web/`](../../../../physkey-dashboard/) | 🌐 **浏览器直连**：TOTP / 冷钱包静态页 | HTML + JS | Web Bluetooth |
+| [`passless/`](../../../../physkey-linux/) | 🐧 **Linux 桥**：把 ESP32 冒充成系统 FIDO2 密钥 | Rust | 虚拟 UHID + CTAP2 |
+| [`intermediate-ca-worker/`](../../../../intermediate-ca-worker/) | 🔏 **证书签发器**：Cloudflare Worker，用根 CA 给中间 CA 签证书（含 Web UI） | JS | HTTPS |
 
 ## 架构：三条链路，一个核心
 
 ```
                         ┌─────────────────────────────┐
-                        │   ESP32-C5 固件（硬件核心）    │
+                        │   ESP32    固件（硬件核心）    │
                         │  私钥永不导出，只签名          │
                         │  WA_REG / WA_SIGNHASH / AUTH  │
                         └──────────────▲──────────────┘
