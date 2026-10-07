@@ -1,7 +1,7 @@
 # ESP Physical Auth 🦀
 
 把 **ESP32** 变成一把**私钥永不导出**的硬件认证器：TOTP / WebAuthn passkey /
-BTC 冷钱包 / 设备身份。设备广播名 `ATRI-TOTP`，与 [ATRI](https://atri.moe) 同源命名。
+BTC 冷钱包 / 设备身份。设备广播名默认 `ATRI-TOTP`。
 
 ## 子项目
 
