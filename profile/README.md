@@ -1,22 +1,23 @@
 # ESP Physical Auth 🦀
 
-把 **ESP32-C5** 变成一把**私钥永不导出**的硬件认证器：TOTP / WebAuthn passkey /
-BTC 冷钱包 / 设备身份。设备广播名 `ATRI-TOTP`。
+把 **ESP32** 变成一把**私钥永不导出**的硬件认证器：TOTP / WebAuthn passkey /
+BTC 冷钱包 / 设备身份。设备广播名 `ATRI-TOTP`，与 [ATRI](https://atri.moe) 同源命名。
 
 ## 子项目
 
 | 目录 | 角色 | 语言 | 接口 |
 |------|------|------|------|
-| [`physkey-firmware/`](../../../../physkey-firmware/) | 🧠 **硬件核心**：生成密钥 + 签名，私钥不出芯片 | ESP-IDF / C | BLE **NUS** 文本协议 |
-| [`physkey-dashboard/`](../../../../physkey-dashboard/) | 🌐 **浏览器直连**：TOTP / 冷钱包静态页 | HTML + JS | Web Bluetooth |
-| [`physkey-linux/`](../../../../physkey-linux/) | 🐧 **Linux 桥**：把 ESP32 冒充成系统 FIDO2 密钥 | Rust | 虚拟 UHID + CTAP2 |
-| [`intermediate-ca-worker/`](../../../../intermediate-ca-worker/) | 🔏 **证书签发器**：Cloudflare Worker，用根 CA 给中间 CA 签证书（含 Web UI） | JS | HTTPS |
+| [`physkey-firmware/`](physkey-firmware/) | 🧠 **硬件核心**：生成密钥 + 签名，私钥不出芯片 | ESP-IDF / C | BLE **NUS** 文本协议 |
+| [`physkey-dashboard/`](physkey-dashboard/) | 🌐 **浏览器直连**：TOTP / 冷钱包静态页 | HTML + JS | Web Bluetooth |
+| [`physkey-linux/`](physkey-linux/) | 🐧 **Linux 桥**：把 ESP32 冒充成系统 FIDO2 密钥 | Rust | 虚拟 UHID + CTAP2 |
+| [`physkey-android/`](physkey-android/) | 🤖 **Android 桥**：让手机系统用 ESP32 做 passkey | Kotlin | Credential Provider API |
+| [`intermediate-ca-worker/`](intermediate-ca-worker/) | 🔏 **证书签发器**：Cloudflare Worker，用根 CA 给中间 CA 签证书（含 Web UI） | JS | HTTPS |
 
 ## 架构：三条链路，一个核心
 
 ```
                         ┌─────────────────────────────┐
-                        │   ESP32    固件（硬件核心）    │
+                        │   ESP32 固件（硬件核心）    │
                         │  私钥永不导出，只签名          │
                         │  WA_REG / WA_SIGNHASH / AUTH  │
                         └──────────────▲──────────────┘
@@ -96,7 +97,7 @@ BTC 冷钱包 / 设备身份。设备广播名 `ATRI-TOTP`。
 > 一句话：**deployment_id = 设备归属的身份证 + 防抢注的锁。** 它不是登录账号，只是标示
 > “这是谁的部署”，让用户在一个统一根 CA 下，仍能分辨出具体是哪台设备/哪个人部署的。
 
-## CA 工具（`esp32c5-totp/tools/atri-ca.py`）
+## CA 工具（`physkey-firmware/tools/atri-ca.py`）
 
 命令分两组：**根 CA**（`root-*`，离线权威）与**中间 CA**（`uca-*`，部署者本机）。
 
@@ -118,7 +119,7 @@ python3 atri-ca.py uca-verify <dev_cert_b64> [uca_cert_b64]   # 验设备证书�
 
 适合自用、或不想把根 CA 私钥交给任何在线服务的情形。全程在本机完成。
 
-> **前置**：`cd esp32c5-totp/tools`，以下命令都在此目录执行。
+> **前置**：`cd physkey-firmware/tools`，以下命令都在此目录执行。
 > `python3` 需装 `cryptography` 库（`pip install cryptography`）。
 
 #### ① 生成根 CA（只做一次）
@@ -132,7 +133,7 @@ python3 atri-ca.py root-init
 - `root_public.pem` / `root_meta.json` —— 公钥与元信息。
 
 命令会打印一行 **根 CA 公钥(base64)**，形如 `BO+1Mjj...`——这串要**嵌进三端客户端**
-（web/totp.html、passless/config.rs、authnkey/Esp32Config.kt 里的 `*_CA_PUBKEY_B64`）。
+（physkey-dashboard/totp.html、physkey-linux/config.rs、authnkey/Esp32Config.kt 里的 `*_CA_PUBKEY_B64`）。
 
 再次查看：
 
@@ -224,7 +225,7 @@ Cloudflare Worker，**只做一件事**——收到用户的**中间 CA 公钥**
 npx wrangler kv namespace create ATRI_ID_REGISTRY
 
 # 2. 注入根 CA 私钥（PEM）
-npx wrangler secret put ROOT_CA_PRIV_PEM < ../esp32c5-totp/tools/ca/root/root_private.pem
+npx wrangler secret put ROOT_CA_PRIV_PEM < ../physkey-firmware/tools/ca/root/root_private.pem
 
 # 3.（可选）设 ALLOW_ORIGIN、自定义域（见 wrangler.toml 注释）
 npx wrangler deploy
@@ -248,5 +249,4 @@ curl -X POST https://<worker>/sign-uca -H 'Content-Type: application/json' \
 
 ## 许可
 
-各子项目分别授权：`esp32c5-totp` / `web` / `passless` 为 GPLv3；
-`authnkey-esp32` 保留上游 MIT。详见各目录 `LICENSE`。
+各子项目均授权为 GPLv3
